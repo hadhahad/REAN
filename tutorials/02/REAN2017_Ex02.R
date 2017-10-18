@@ -39,10 +39,10 @@ for (i in 1:n) {
      a <- v[i]^2 + w[i]^2
      z[i] <- ifelse(a <=1 , a, NA)
      }
- round(summary(z), 2)
+round(summary(z), 2)
 is.na(z)
 
-
+rbinom()
 toss <- function(n=5, p=0.5) sum(rbinom(n, 1, p))
 toss()
 toss(20)
@@ -74,7 +74,7 @@ colnames(data)
 colnames(data) <- c("pet","house","members","income","area")
 is.array(data)
 is.data.frame(data)
-data           <- as.data.frame(data)
+data <- as.data.frame(data)
 
 
 
@@ -179,7 +179,7 @@ hist(birth$bwt, freq=F, main="", xlab="Birth weight",xlim=c(0, 6000), ylim=c(0, 
 lines(density(birth$bwt), col="red", lwd=2)
 x=seq(0,6000,length=1000)
 y=dnorm(x,mean=mean(birth$bwt),sd=sd(birth$bwt))
-lines(x,y,col="blue", lwd=2, lty = 1)
+lines(x,y,col="blue", lwd=2, lty = 10)
 
 
 qqnorm(birth$bwt, main="")

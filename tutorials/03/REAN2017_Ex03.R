@@ -1,0 +1,291 @@
+################################## 
+##### 01REAN Cviceni 0 ##########
+#################################
+#
+# Todays exercise
+# Introduction to Simple linear regression in R
+
+setwd("~/Studies/REAN/tutorials/03")  
+
+
+#library(UsingR)
+#data(father.son)
+#write.csv(father.son,'fsdata.csv')
+
+fsdata = read.csv('fsdata.csv', sep = ",")
+
+
+# Check out the structure of the data set
+head(fsdata)
+View(fsdata)
+summary(fsdata)
+names(fsdata)
+
+# Visualize data
+
+hist(c(fsdata$son,fsdata$father), freq = F, breaks = 20, main="Histogram and Kernel density plot",xlab="Height", ylab="Density")
+lines(density(fsdata$son,na.rm=TRUE),col="red")
+lines(density(fsdata$father,na.rm=TRUE),col="blue")
+legend("topright",legend = c("son","father"),lty = c(1,1),col = c("red","blue"))
+
+# Basic scatterplot matrix
+pairs(fsdata$father~fsdata$son)
+
+# Scatterplot of variables of interest
+plot(son ~ father,fsdata,
+     main="Father and Son Height - Dalton dataset",xlab="Height of Son", ylab="Height of Father")
+
+# Use ggplot library: 
+library(ggplot2)
+ggplot(fsdata, aes(x=father, y=son))  +
+    geom_point(size=1, alpha=0.7) +
+    xlab("Height of Father") +
+    ylab("Height of Son") +
+    theme_bw() + 
+    ggtitle("Father and Son Height - Dalton dataset")
+
+# Use car library: plot including fit lines, marginal box plots, ....
+library(car)
+scatterplot(fsdata$father,fsdata$son)
+scatterplotMatrix(fsdata)
+
+
+
+# Is there close relationship ?
+plot(son ~ father,fsdata,main="Father and Son Height - Dalton dataset",xlab="Height of Son", ylab="Height of Father")
+
+# Change plot: add line starting in (0,0) and force R to start x,yaxis in 0
+plot(son ~ father,fsdata,xlim = c(0,90), ylim = c(0,90),pch=".", xaxs="i",yaxs="i",
+     main="Father and Son Height - Dalton dataset",xlab="Height of Son", ylab="Height of Father")
+abline(0,1)
+
+############################
+### Simple Regression ######
+############################
+
+############################
+#### Anlyze data by "manually"
+
+# mean deviations of the father and son heights
+s_mean  <- mean(fsdata$son)
+s_mean == sum(fsdata$son)/(length(fsdata$son)) # same as manually from the definition of sample mean
+
+f_mean  <- mean(fsdata$father)
+
+# standard deviations of the father and son heights
+s_sd   <- sd(fsdata$son)
+f_sd   <- sd(fsdata$father)
+
+# correlation of fsdata data (father x son is in interest)
+fs_cor <- cor(fsdata)[2, 3] 
+
+# slope 
+b2_hat <- fs_cor * s_sd / f_sd # how to do it in different way?
+# to je ten samy vzorecek jako v prezentaci (da se to odvodit)
+
+b2_hat
+# intercept 
+b1_hat <- s_mean - b2_hat*f_mean
+b1_hat
+
+# print regression line parameters
+beta_hat = rbind(b1_hat,b2_hat)
+beta_hat
+
+# do the same with differnet notation
+intercept <- matrix(1,length(fsdata$son),1)
+X         <- (fsdata$father)
+IX        <- cbind(intercept,fsdata$father)
+Y         <- (fsdata$son)
+
+b2_hat    <- cor(X,Y) * (sd(Y)/sd(X))
+b2_hat
+b1_hat    <- mean(Y) - b2_hat*mean(X)
+b1_hat
+
+
+# find residuals
+# %*% je maticove nasobeni
+res =  Y - IX%*%beta_hat
+
+
+# estimate variance of disturbances sigma^2
+n=dim(fsdata)[1] # number of observations
+p=1              # number of regression coefficients - No. of DF
+sigma <- sqrt((1/(n-1-p))*sum((Y - IX%*%beta_hat)^2))
+
+# same diff notation
+MSE  <- sum(res^2)/(n-2) # the same as sigma
+RMSE <- sqrt(MSE)   
+
+#  variance of parameters
+var_b2_hat <- sigma^2*(1/sum((X - mean(X))^2))
+         # <- sigma^2*(1/((n-1)*var(X))) #the same
+sd_b2_hat   <- sqrt(var_b2_hat)
+var_b2_hat
+sd_b2_hat
+
+
+var_b1_hat <- sigma^2*(sum(X^2)/(n*sum((X - mean(X))^2)))
+sd_b1_hat   <- sqrt(var_b1_hat)
+var_b1_hat
+sd_b1_hat
+
+# Compute coefficient of determination
+# R-squared = Explained variation / Total variation
+SS_tot = sum((Y - mean(Y))^2)
+SS_reg = sum((IX%*%beta_hat - mean(Y))^2)
+SS_res = sum(res^2)
+SS_tot == SS_res+SS_reg
+
+R2 = 1-SS_res/SS_tot
+R2
+R2 = SS_reg/SS_tot
+R2
+
+##############################
+### OLS estimate #############
+# A * B 	Element-wise multiplication
+# A %*% B 	Matrix multiplication 
+
+# without intercept
+solve(t(X)%*%(X))%*%(t(X)%*%Y)
+
+# with intercept
+solve(t(IX)%*%(IX))%*%(t(IX)%*%Y)
+
+
+
+############################
+#### Use R lm-linear model function !!!
+
+model0 = lm(son ~ -1 + father ,fsdata) # -1 for intercept
+summary(model0)
+
+model1 = lm(son ~ father,fsdata)
+summary(model1)
+
+# study summary function for lm
+help(summary.lm)
+
+
+
+# plot data with regression line
+plot(son ~ father,fsdata,
+     main="Father and Son Height - Dalton dataset",xlab="Height of Father", ylab="Height of Son")
+abline(model0,col ="blue")
+abline(model1, col ="red")
+par(xpd=TRUE)
+legend("topleft",legend = c("without intercept","with intercept"),lty = c(1,1),col = c("blue","red"))
+
+
+
+# plot residuals - next lesson in details
+layout(matrix(1:4,2,2))
+plot(model0)
+
+
+
+
+
+ks.test(residuals(model1),"pnorm")
+shapiro.test(residuals(model1))
+
+qqnorm(residuals(model1))
+qqline(residuals(model1), col = 2)
+
+
+
+dev.off()
+graphics.off()
+
+## direct print of given variables from lm - objects
+## examples - in details next lessons
+coef(model1)
+residuals(model1)
+fitted.values(model1)
+fitted(model1)
+sigmaHat(model1)
+# ......
+
+
+
+## Display results by ggplot library
+
+# minimum and maximum father height
+f_min <- min(fsdata$father)
+f_max <- max(fsdata$father)
+
+# equally space points between from the min-max height interval
+xdat <- (f_max - f_min) * seq(0, 1, 0.01) + f_min
+ydat <- b1_hat + b2_hat*xdat
+
+# regression line data frame
+regressionLine <- data.frame(xdat, ydat)
+names(regressionLine) <- c("son", "father")
+
+# plot of data set with regression line
+ggplot(fsdata, aes(x=father, y=son)) + 
+    geom_point(size=1, alpha=0.7) + 
+    geom_line(data=regressionLine, aes(x=son, y=father), lwd=1.5, colour="red") + 
+    xlab("Height of father") + 
+    ylab("Height of son") + 
+    ggtitle("Father-son Height Data")
+
+
+
+
+
+
+
+
+
+############### EXERCISE ###########
+
+
+# Investigate a relationship between speed and stopping distance for cars
+View(cars)
+
+# Investigate a relationship Waiting time between eruptions 
+# and the duration of the eruption for the Old Faithful geyser in Yellowstone National Park.
+View(faithful)
+
+
+#questions:
+#
+# Try model with and without intercept
+# Compute "manualy" OLS estimate of regression parametrs and error variance
+# Compute "manualy" variance of estimated parametrs
+# plot data with estimated regression lines
+#
+# Investgate output from the lm function
+#
+# Is the simple linear model good aproximation for these problems?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#cov(fsdata$father,fsdata$son)/(sd(fsdata$father))^2 - jiny vzorecek pro vypocet
+
+

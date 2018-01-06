@@ -181,3 +181,83 @@ newradbp
 ############
 ### Q05: ###
 ############
+
+# nahui
+
+
+############
+### Q06: ###
+############
+
+medv_lm <- lm(medv ~ crim, data)
+summary(medv_lm)
+# Vidíme, že intercept a proměnná 'crim' jsou signifikantní podle p-value, ale koeficient determinace je docela nízký.
+# Podíváme se na chování reziduí:
+opar <- par(mfrow=c(2,2))
+plot(medv_lm)
+par(opar)
+# Je vidět, že rezidua nejsou rozmístěny symetricky kolem regresní křivky a navíc z Q-Q plotu neplyne jejich normalita.
+
+# Nyní se podíváme na fit modelu:
+ggplot(data, aes(x=crim, y=medv)) +
+  geom_point(size=1, alpha=0.7) +
+  geom_abline(intercept = coef(medv_lm)[1], slope = coef(medv_lm)[2], col='darkred') +
+  theme_bw() +
+  xlab("Per Capita Crime Rate by Town") +
+  ylab("Mean Value of Owner-Occupied Homes") +
+  ggtitle("Simple Linear Model Fit") +
+  coord_cartesian(xlim=c(0, 90), ylim=c(0, 50))
+# Z fitu daného jednoduchého regresního modelu vyplývá, že ceny nemovitiostí klesají v závislosti na míře kriminality
+(coef(medv_lm)[1] + coef(medv_lm)[2]*0)-(coef(medv_lm)[1] + coef(medv_lm)[2]*10)
+# Vzroste-li kriminalita o 10 jednotek, pak ceny v průměru klesnou o přibližne $4000.
+
+
+############
+### Q07: ###
+############
+
+### Uděláme logaritmickou transformaci odezvy 'medv'. ###
+logmedv_lm <- lm(log(medv)~ crim, data)
+summary(logmedv_lm)
+# Koeficient determinace se zvýšil, p-value ukazuje na signifikantnost proměnných.
+opar <- par(mfrow=c(2,2))
+plot(logmedv_lm)
+par(opar)
+# Rezidua jsou nyní rozmístěny více symetricky a Q-Q plot také vypadá lépe.
+# Stále ale model není ideální.
+
+### Graf s regresní křivkou pro nový model a konfidenčními intervaly na hladině významnosti 5%: ###
+new_crime <- data.frame(crim = seq(0,90,0.1779))
+new_conf = predict(logmedv_lm, newdata = new_crime, interval = "confidence", level=0.95)
+new_pred = predict(logmedv_lm, newdata = new_crime, interval = "prediction", level=0.95)
+ggplot(data, aes(x=crim, y=log(medv))) +
+  geom_point(size=1, alpha=0.7) +
+  labs(color="Lines:") + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,1], colour = "Fit")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,2], colour = "Confidence Interval")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,3], colour = "Confidence Interval")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_pred[,2], colour = "Prediction Interval"), linetype=2) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_pred[,3], colour = "Prediction Interval"), linetype=2) + 
+  theme_bw() +
+  xlab("Per Capita Crime Rate by Town") +
+  ylab("Log - Mean Value of Owner-Occupied Homes") +
+  ggtitle("Linear Model with Log-Transformation of the Dependant Variable (Tolerance - 5%)") +
+  coord_cartesian(xlim=c(0, 90), ylim=c(1, 4))
+
+### Porovnáme naši transformaci s transformací navrženou Box-Coxem:
+dev.off()
+# Log-věrohodnostní profil Box-Coxovy transformace:
+boxcox(medv_lm)
+# Nový model s použitím Box-Coxovy transformace.
+medv_lm_bc <- update(medv_lm, . ~ boxCoxVariable(medv))
+summary(medv_lm_bc)
+
+
+ggplot(data, aes(x=crim, y=medv)) +
+  geom_point(size=1, alpha=0.7) +
+  geom_abline(intercept = coef(medv_lm_bc)[1], slope = coef(medv_lm_bc)[2], col="darkblue") + 
+  theme_bw() +
+  xlab("Per Capita Crime Rate by Town") +
+  ylab("Mean Value of Owner-Occupied Homes") +
+  ggtitle("Box-Cox Transformation") +
+  coord_cartesian(xlim=c(0, 90), ylim=c(1, 50))

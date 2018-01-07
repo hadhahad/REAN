@@ -18,9 +18,13 @@ head(Boston)
 ### Q01: ###
 ############
 
-# Z použití funkce 'summary' vyplývá, že v datovém souboru nejsou chybějicí hodnoty (NA), navíc
-# lze také vidět základní charakteristiky proměnných.
+# Základní statistiky:
 describe(Boston)
+
+# NA nejsou:
+na_count <-sapply(Boston, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count
 
 # Rozměry datového souboru jsou 506x14, což odpovídá rozměrům uvedeným v zadání zápočtové úlohy.
 dim(Boston)
@@ -147,7 +151,7 @@ p6
 ### Q04: ###
 ############
 
-### Boxplot pro proměnnou 'rad' ###
+### Boxplot pro proměnnou 'rad': ###
 radbp <- ggplot(Boston, aes(x=rad, y=medv, group=rad)) + 
   geom_boxplot(fill="white", colour="darkblue", notch=F) +
   geom_jitter(width = 0.2) +
@@ -156,7 +160,7 @@ radbp <- ggplot(Boston, aes(x=rad, y=medv, group=rad)) +
   ggtitle("Mean Value of Owner-Occupied Homes and Index of Accessibility to Radial Highways")
 radbp
 
-### Boxplot pro proměnnou 'chas' ###
+### Boxplot pro proměnnou 'chas': ###
 is.factor(Boston$chas)
 Boston$chas <- as.factor(Boston$chas)
 chasbp <- ggplot(Boston, aes(x=chas, y=medv, group=chas)) + 
@@ -167,7 +171,7 @@ chasbp <- ggplot(Boston, aes(x=chas, y=medv, group=chas)) +
   ggtitle("Mean Value of Owner-Occupied Homes and Index of Accessibility to Radial Highways")
 chasbp
 
-### Boxplot pro proměnnou 'rad' s transformací ###
+### Boxplot pro proměnnou 'rad' s transformací: ###
 Boston["newrad"] <- "Low Accessibility"
 Boston$newrad[Boston$rad < 10] = "High Accessibility"
 newradbp <- ggplot(Boston, aes(x=newrad, y=medv, group=newrad)) + 
@@ -183,9 +187,10 @@ newradbp
 ### Q05: ###
 ############
 
-#(Description: Another types of visualization)
-#Correlogram. It is used to test the level of co-relation among the variable available in the data set.
-corrgram(Boston, order=NULL,panel=panel.shade)
+# Vizualizace korelační matice.
+# Čím výrazněji je barva, tím silneji je korelace mezi proměnnými
+# (červená - záporná, modrá - kladná).
+corrgram(Boston, order=NULL,panel=panel.shade)  # v kooperaci s Marko Sahanem.
 
 
 ############
@@ -296,7 +301,7 @@ exp_beta1 <- exp(coef(logboston_lm)[2])
 
 ############
 ### Q09: ###
-############ +I()
+############ 
 
 dev.off()
 
@@ -430,8 +435,7 @@ summary(boston_all_lm)  # Model se všemi proměnnými najednou je přetížený
 
 ### Pro výběr ze všech možných vysvětlujících proměnných použijeme balík 'leaps' a kritéria Cp/r2. ###
 summary(newdata)
-leapsstatCp <- leaps(x=newdata[,c(1:13)], y=newdata[,14], 
-                     names=names(newdata)[c(1:13)], method="Cp")
+leapsstatCp <- leaps(x=newdata[,c(1:13)], y=newdata[,14], names=names(newdata)[c(1:13)], method="Cp")
 leapsstatr2 <- leaps(x=newdata[,c(1:13)], y=newdata[,14], 
                      names=names(newdata)[c(1:13)], method="r2")
 CpParams <- leapsstatCp$size; CpValues <- leapsstatCp$Cp
@@ -483,7 +487,7 @@ cor(cbind(newdata$crim,newdata$zn,newdata$indus,newdata$chas,newdata$nox,
           newdata$black,newdata$ptratio,newdata$lstat))
 # Q05 obsahuje zobrazení matice kolinearity.
 
-# Inflace variance pro vybraný model také není velka (mnohem menší <1.7).
+# Inflace variance pro vybraný model také není velka (<1.7).
 vif(model_final)
 
 # Index podmíněnosti je o hodně menší 30
@@ -512,6 +516,7 @@ exp_bet1 <- exp(coef(model_final_crim)[5])
 # Daný model predikuje pokles cen přibližně o 1.02 % při nárůstu kriminality o jednotku.
 
 median(newdata$crim)
+dev.off()
 plot(allEffects(model_final_crim))
 
 
@@ -524,18 +529,35 @@ summary(model_final)
 op <- par(mfrow=c(2,2))
 plot(model_final)
 par(opar)
+sigma(model_final)
 # Tento model má přípustný koeficient determinace (>0.6).
+# Odchylka reziduí nění moc velká (=0.2).
 # V Q12 byla pozorována symetrie reziduí a byly provedeny testy na 
 # heteroskedascicitu a normalitu reziduí.
 
 # Podívejme se na partial-regression grafy:
 avPlots(model_final_crim)
 
-# Na Q-Q plotu jsou stále vidět outliery.
-ggplot(newdata, aes(sample = residuals(model_final))) +
-  stat_qq(color="firebrick2", alpha=1) +
-  geom_abline(intercept = mean(residuals(model_final)), slope = sd(residuals(model_final)))
-
 # Outliery a leverage pointy by šlo odstranit nějakoi robustní metodou (LTS, LWS).
 
+
+############
+### Q16: ###
+############
+
+# Možná pokračování analýzy:
+# 1) faktorizace proměnných 'chas', 'rad' a možná ještě 'tax';
+# 2) zařazení dalších proměnných do modelu by mohlo zlepšit jeho
+#    charakteristiky..;
+# 3) polynomiální transformace proměnné lstat;
+# 4) použití robustních statistik pro aproximace a predikce...
+
+
+############
+### Q17: ###
+############
+
+# Myslím, že potlačení kriminality v daném místě by skoro nic nezměnilo. Možná jenom
+# potlačení o hodně, neboť z Q12 plyne, že ceny na nemovitost závisejí na hodně 
+# parametrech, přičemž kriminalita není nejdůležitější z nich.
 

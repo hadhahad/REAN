@@ -224,7 +224,7 @@ summary(trees_lm1.0)
 
 # Choose a model by AIC in a Stepwise Algorithm
 trees_lm1.1 <- step(trees_lm1.0)
-summary(trees_lm1.0)
+summary(trees_lm1.1)
 
 AIC(trees_lm1.1)
 nrow(trees)*(1+log(2*pi*(summary(trees_lm1.1)$sigma)^2)) + (length(coefficients(trees_lm1.1))+2)

@@ -5,15 +5,11 @@
 
 
 ### Načtení potřebných knihoven ###
-needed.libraries <- c('data.table','car','MASS','ggplot2','ISLR','graphics','effects','lattice')
+needed.libraries <- c('data.table','car','MASS','ggplot2','ISLR','graphics','effects','lattice','segmented','leaps')
 for(libs in needed.libraries) require(libs, character.only = TRUE)
 
-
-### Načtení dat ###
 ? Boston
 head(Boston)
-data <- Boston
-
 
 ############
 ### Q01: ###
@@ -21,10 +17,10 @@ data <- Boston
 
 # Z použití funkce 'summary' vyplývá, že v datovém souboru nejsou chybějicí hodnoty (NA), navíc
 # lze také vidět základní charakteristiky proměnných.
-summary(data)
+summary(Boston)
 
 # Rozměry datového souboru jsou 506x14, což odpovídá rozměrům uvedeným v zadání zápočtové úlohy.
-dim(data)
+dim(Boston)
 
 
 ############
@@ -32,8 +28,8 @@ dim(data)
 ############
 
 # Histogram a odhad hustoty pro odezvu 'medv'.
-hist(data$medv, freq=F, main="", xlab="Median Value of Owner-Occupied Homes in $1000s.",xlim=c(0, 55), ylim=c(0, 0.07))
-lines(density(data$medv), col="red", lwd=2)
+hist(Boston$medv, freq=F, main="", xlab="Median Value of Owner-Occupied Homes in $1000s.",xlim=c(0, 55), ylim=c(0, 0.07))
+lines(density(Boston$medv), col="red", lwd=2)
 
 
 ############
@@ -42,13 +38,13 @@ lines(density(data$medv), col="red", lwd=2)
 
 ### (a) Scatter plot závislosti cen nemovitostí na kriminalitě (knihovna 'car'). ###
 # + smoothery
-scatterplot(medv ~ crim, data, grid = T, smoother = NULL, lwd = 2,
+scatterplot(medv ~ crim, Boston, grid = T, smoother = NULL, lwd = 2,
             xlab = "Per Capita Crime Rate by Town", 
             ylab = "Mean Value of Owner-Occupied Homes",
             xlim = c(0, 90), 
             ylim = c(0, 50),
             pch = 20)
-lines(lowess(x = data$crim, y = data$medv), col = "red", lwd = 2)
+lines(lowess(x = Boston$crim, y = Boston$medv), col = "red", lwd = 2)
 legend("topright", 
        legend = c("Linear Smoother", "LOWESS Smoother"), 
        col = c("green", "red"), 
@@ -63,7 +59,7 @@ legend("topright",
 ### (b) Scatter plot závislosti cen nemovitostí na kriminalitě (knihovna 'ggplot2'). ###
 # + smoothery s konfidenčními intervaly
 # ('loess smoother' je obecnější než 'lowess') 
-p1 <- ggplot(data, aes(x=crim, y=medv)) +
+p1 <- ggplot(Boston, aes(x=crim, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -76,7 +72,7 @@ p1 <- ggplot(data, aes(x=crim, y=medv)) +
 p1
 
 ### Vybereme zbůsob (b) pro zobrazení závislosti 'medv' na ostatních parametrech: ###
-p2 <- ggplot(data, aes(x=nox, y=medv)) +
+p2 <- ggplot(Boston, aes(x=nox, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -86,7 +82,7 @@ p2 <- ggplot(data, aes(x=nox, y=medv)) +
   ylab("Mean Value of Owner-Occupied Homes") +
   ggtitle("Mean Value of Owner-Occupied Homes and Nitrogen Oxides Concentration - Boston Dataset") +
   coord_cartesian(xlim=c(0.385, 0.8710), ylim=c(0, 50)) 
-p3 <- ggplot(data, aes(x=rm, y=medv)) +
+p3 <- ggplot(Boston, aes(x=rm, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -96,7 +92,7 @@ p3 <- ggplot(data, aes(x=rm, y=medv)) +
   ylab("Mean Value of Owner-Occupied Homes") +
   ggtitle("Mean Value of Owner-Occupied Homes and Average Number of Rooms - Boston Dataset") +
   coord_cartesian(xlim=c(3.561, 8.780), ylim=c(0, 50))
-p4 <- ggplot(data, aes(x=lstat, y=medv)) +
+p4 <- ggplot(Boston, aes(x=lstat, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -106,7 +102,7 @@ p4 <- ggplot(data, aes(x=lstat, y=medv)) +
   ylab("Mean Value of Owner-Occupied Homes") +
   ggtitle("Mean Value of Owner-Occupied Homes and Lower Status of the Population - Boston Dataset") +
   coord_cartesian(xlim=c(1.7, 38), ylim=c(0, 50))
-p5 <- ggplot(data, aes(x=ptratio, y=medv)) +
+p5 <- ggplot(Boston, aes(x=ptratio, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -116,7 +112,7 @@ p5 <- ggplot(data, aes(x=ptratio, y=medv)) +
   ylab("Mean Value of Owner-Occupied Homes") +
   ggtitle("Mean Value of Owner-Occupied Homes and Pupil-Teacher Ratio - Boston Dataset") +
   coord_cartesian(xlim=c(12.6, 22), ylim=c(0, 50))
-p6 <- ggplot(data, aes(x=dis, y=medv)) +
+p6 <- ggplot(Boston, aes(x=dis, y=medv)) +
   geom_point(size=1, alpha=0.7) +
   geom_smooth(method = 'lm', formula = y ~ x, aes(colour="Linear"))  +
   geom_smooth(method = 'loess', formula = y ~ x, aes(colour="Loess")) +
@@ -147,7 +143,7 @@ p6
 ############
 
 ### Boxplot pro proměnnou 'rad' ###
-radbp <- ggplot(data, aes(x=rad, y=medv, group=rad)) + 
+radbp <- ggplot(Boston, aes(x=rad, y=medv, group=rad)) + 
   geom_boxplot(fill="white", colour="darkblue", notch=F) +
   geom_jitter(width = 0.2) +
   xlab("Index of Accessibility to Radial Highways") +
@@ -156,9 +152,9 @@ radbp <- ggplot(data, aes(x=rad, y=medv, group=rad)) +
 radbp
 
 ### Boxplot pro proměnnou 'chas' ###
-is.factor(data$chas)
-data$chas <- as.factor(data$chas)
-chasbp <- ggplot(data, aes(x=chas, y=medv, group=chas)) + 
+is.factor(Boston$chas)
+Boston$chas <- as.factor(Boston$chas)
+chasbp <- ggplot(Boston, aes(x=chas, y=medv, group=chas)) + 
   geom_boxplot(fill="white", colour="darkblue", notch=F) +
   geom_jitter(width = 0.2) +
   xlab("Charles River Dummy Variable") +
@@ -167,9 +163,9 @@ chasbp <- ggplot(data, aes(x=chas, y=medv, group=chas)) +
 chasbp
 
 ### Boxplot pro proměnnou 'rad' s transformací ###
-data["newrad"] <- "Low Accessibility"
-data$newrad[data$rad < 10] = "High Accessibility"
-newradbp <- ggplot(data, aes(x=newrad, y=medv, group=newrad)) + 
+Boston["newrad"] <- "Low Accessibility"
+Boston$newrad[Boston$rad < 10] = "High Accessibility"
+newradbp <- ggplot(Boston, aes(x=newrad, y=medv, group=newrad)) + 
   geom_boxplot(fill="white", colour="darkblue", notch=TRUE) +
   geom_jitter(width = 0.2) + 
   xlab("Index of Accessibility to Radial Highways") +
@@ -189,48 +185,52 @@ newradbp
 ### Q06: ###
 ############
 
-medv_lm <- lm(medv ~ crim, data)
-summary(medv_lm)
+boston_lm <- lm(medv ~ crim, Boston)
+summary(boston_lm)
 # Vidíme, že intercept a proměnná 'crim' jsou signifikantní podle p-value, ale koeficient determinace je docela nízký.
 # Podíváme se na chování reziduí:
 opar <- par(mfrow=c(2,2))
-plot(medv_lm)
+plot(boston_lm)
 par(opar)
 # Je vidět, že rezidua nejsou rozmístěny symetricky kolem regresní křivky a navíc z Q-Q plotu neplyne jejich normalita.
 
 # Nyní se podíváme na fit modelu:
-ggplot(data, aes(x=crim, y=medv)) +
+ggplot(Boston, aes(x=crim, y=medv)) +
   geom_point(size=1, alpha=0.7) +
-  geom_abline(intercept = coef(medv_lm)[1], slope = coef(medv_lm)[2], col='darkred') +
+  geom_abline(intercept = coef(boston_lm)[1], slope = coef(boston_lm)[2], col='darkred') +
   theme_bw() +
   xlab("Per Capita Crime Rate by Town") +
   ylab("Mean Value of Owner-Occupied Homes") +
   ggtitle("Simple Linear Model Fit") +
   coord_cartesian(xlim=c(0, 90), ylim=c(0, 50))
 # Z fitu daného jednoduchého regresního modelu vyplývá, že ceny nemovitiostí klesají v závislosti na míře kriminality
-(coef(medv_lm)[1] + coef(medv_lm)[2]*0)-(coef(medv_lm)[1] + coef(medv_lm)[2]*10)
+(coef(boston_lm)[1] + coef(boston_lm)[2]*0)-(coef(boston_lm)[1] + coef(boston_lm)[2]*10)
 # Vzroste-li kriminalita o 10 jednotek, pak ceny v průměru klesnou o přibližne $4000.
+1-(coef(boston_lm)[1] + coef(boston_lm)[2]*2)/(coef(boston_lm)[1]+coef(boston_lm)[2]*1)
+# Podle tohoto modelu cena nemovitosti klesne přibližně o 1.8 % při nárůstu kriminality o 1 jednotku.
 
 
 ############
 ### Q07: ###
 ############
 
-### Uděláme logaritmickou transformaci odezvy 'medv'. ###
-logmedv_lm <- lm(log(medv)~ crim, data)
-summary(logmedv_lm)
+### (1) Uděláme logaritmickou transformaci odezvy 'medv'. ###
+logboston_lm <- lm(log(medv)~ crim, Boston)
+summary(logboston_lm)
 # Koeficient determinace se zvýšil, p-value ukazuje na signifikantnost proměnných.
 opar <- par(mfrow=c(2,2))
-plot(logmedv_lm)
+plot(logboston_lm)
 par(opar)
 # Rezidua jsou nyní rozmístěny více symetricky a Q-Q plot také vypadá lépe.
 # Stále ale model není ideální.
 
-### Graf s regresní křivkou pro nový model a konfidenčními intervaly na hladině významnosti 5%: ###
-new_crime <- data.frame(crim = seq(0,90,0.1779))
-new_conf = predict(logmedv_lm, newdata = new_crime, interval = "confidence", level=0.95)
-new_pred = predict(logmedv_lm, newdata = new_crime, interval = "prediction", level=0.95)
-ggplot(data, aes(x=crim, y=log(medv))) +
+### (2) Graf s regresní křivkou pro nový model a konfidenčními intervaly na hladině významnosti 5%: ###
+# V daném případě konfidenční interval neposkytuje skoro žádnou užitečnou informaci, 
+# prediction interval obsahuje v sobě většinu pozorování.
+new_crime <- Boston.frame(crim = seq(0,90,0.1779))
+new_conf = predict(logboston_lm, newdata = new_crime, interval = "confidence", level=0.95)
+new_pred = predict(logboston_lm, newdata = new_crime, interval = "prediction", level=0.95)
+logtrans_p1<- ggplot(Boston, aes(x=crim, y=log(medv))) +
   geom_point(size=1, alpha=0.7) +
   labs(color="Lines:") + 
   geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,1], colour = "Fit")) + 
@@ -243,21 +243,209 @@ ggplot(data, aes(x=crim, y=log(medv))) +
   ylab("Log - Mean Value of Owner-Occupied Homes") +
   ggtitle("Linear Model with Log-Transformation of the Dependant Variable (Tolerance - 5%)") +
   coord_cartesian(xlim=c(0, 90), ylim=c(1, 4))
+logtrans_p1
 
-### Porovnáme naši transformaci s transformací navrženou Box-Coxem:
+### (3) Porovnáme naši transformaci s transformací navrženou Box-Coxem: ###
 dev.off()
 # Log-věrohodnostní profil Box-Coxovy transformace:
-boxcox(medv_lm)
+boxcox(boston_lm)
 # Nový model s použitím Box-Coxovy transformace.
-medv_lm_bc <- update(medv_lm, . ~ boxCoxVariable(medv))
-summary(medv_lm_bc)
+boston_lm_bc <- update(boston_lm, . ~ . + boxCoxVariable(medv))
+summary(boston_lm_bc)
+summary(logboston_lm)
+# Je vidět, že přidání (signifikantní) Box-Coxovy proměnné zlepšilo původní model bez transformací:
+# zvětšil se koeficient determinace, přičemž je přibližně dvakrát větší než u modelu s logaritmickou transformací.
+# Při záměně (ne přidání) vysvětlující proměnné Box-Coxovou výsledek je o něco horší.
+# Added-Variable Plots taky ukazují na schopnost nového modelu aproximovat data, ale tato aproximace je daleká od ideální.
+avPlots(boston_lm_bc)
+# Nakonec se podíváme na chování reziduí obou modelů:
+opar <- par(mfrow=c(2,2))
+plot(boston_lm_bc)  # Box-Coxova transformace
+plot(logboston_lm)  # Logaritmická transformace odezvy
+par(opar)
+# Je vidět, že porovnávané modely mají problém se symetrií reziduí a jejich normalitou.
+# Oba modely identifikují stejné problematické body s indexy 381, 400, 490, 419.
 
 
-ggplot(data, aes(x=crim, y=medv)) +
+############
+### Q08: ###
+############
+
+# Ještě jednou se podívejme na logaritmickou transformaci odezvy 'medv':
+logtrans_p1
+
+exp_beta1 <- exp(coef(logboston_lm)[2])  # Je kladné číslo menší než jedna vyjádřující poměr E[Y|X=x+1]/E[Y|X=x].
+# Tedy (1-exp_beta1)*100 % vyjadřuje o kolik procent klesne cena nemovitosti při nárustu míry kriminality o 1 jendotku.
+(1-exp_beta1)*100
+# Což je přibližně 2.48 %.
+# Tento model předpovídá větší pokles než jednoduchý lineární model z Q06.
+
+
+############
+### Q09: ###
+############
+
+dev.off()
+
+### (1) Po částech konstantní transformace (Piecewise Regression). ###
+const_boston_lm <- segmented(lm(medv ~ crim, Boston), seg.Z = ~ crim)
+summary(const_boston_lm)
+new_crime <- data.frame(crim = seq(0,90,0.1779))
+new_boston_piecewise <- predict(const_boston_lm, newdata = new_crime)
+
+### (2) Lineární transformace. ###
+lin_boston_lm <- lm(medv ~ poly(crim, degree=1, raw=TRUE), Boston)
+summary(lin_boston_lm)
+new_boston_linear <- predict(lin_boston_lm, newdata = new_crime)
+crPlots(lin_boston_lm)
+
+### (3) Kvadratická polynomiální transformace. ###
+quadratic_boston_lm <- lm(medv ~ poly(crim, degree=2, raw=TRUE), Boston)
+summary(quadratic_boston_lm)
+new_boston_quadratic <- predict(quadratic_boston_lm, newdata = new_crime)
+crPlots(cubic_boston_lm)
+
+### (4) Kubická polynomiální transformace. ###
+cubic_boston_lm <- lm(medv ~ poly(crim, degree=3, raw=TRUE), Boston)
+summary(cubic_boston_lm)  # Je vidět, že proměnná se stupněm 3 už není tak signifikantní.
+new_boston_cubic <- predict(cubic_boston_lm, newdata = new_crime)
+crPlots(cubic_boston_lm)  # Neliší se od předchozího crPlots pro kvadratickou transformaci.
+
+### (5) Splines. ###
+splines_boston_lm <- lm(medv ~ bs(crim,knots=c(12, 25),degree=1,Boundary.knots=c(0,90)), Boston)
+summary(splines_boston_lm)
+new_boston_splines <- predict(splines_boston_lm, newdata = new_crime)
+splinestransf_plot <- ggplot(Boston, aes(x=crim, y=medv)) +
   geom_point(size=1, alpha=0.7) +
-  geom_abline(intercept = coef(medv_lm_bc)[1], slope = coef(medv_lm_bc)[2], col="darkblue") + 
+  geom_line(aes(x=new_crime, y=new_boston_piecewise, colour="Piecewise Regression Line")) +
+  geom_line(aes(x=new_crime, y=new_boston_linear, colour="Linear Transformation")) +
+  geom_line(aes(x=new_crime, y=new_boston_quadratic, colour="Quadratic Transformation")) +
+  geom_line(aes(x=new_crime, y=new_boston_cubic, colour="Cubic Transformation")) +
+  geom_line(aes(x=new_crime, y=new_boston_splines, colour="Splines Transformation")) +
+  labs(color="Lines:") + 
   theme_bw() +
   xlab("Per Capita Crime Rate by Town") +
   ylab("Mean Value of Owner-Occupied Homes") +
-  ggtitle("Box-Cox Transformation") +
-  coord_cartesian(xlim=c(0, 90), ylim=c(1, 50))
+  ggtitle("Transformations of the Dependant Variable - Boston Dataset") +
+  coord_cartesian(xlim=c(0, 90), ylim=c(0, 50))
+splinestransf_plot
+
+### Podívejme se na rezidua modelů. ###
+opar <- par(mfrow=c(2,2))
+plot(lin_boston_lm) # Tento model nesplňuje symetrii reziduí (je přítomná nelineární závislost) ani jejich normalitu.
+plot(quadratic_boston_lm)
+plot(cubic_boston_lm)
+plot(splines_boston_lm)
+par(opar)
+# Ostatní modely jsou vzhledem symetrii o něco lepší, ale je problém s normalitou reziduí (pokračování v Q10).
+
+
+############
+### Q10: ###
+############
+
+### Vybereme model 'splines_boston_lm', ale provedeme pro něj navíc logaritmickou transformaci odezvy. ###
+opar <- par(mfrow=c(2,2))
+logsplines_boston_lm <- lm(log(medv) ~ bs(crim,knots=c(12,25),degree=1,Boundary.knots=c(0,90)), Boston)
+summary(logsplines_boston_lm)
+plot(logsplines_boston_lm)
+par(opar)
+# Nyní Q-Q Plot vypadá o něco lepší, stále ale jsou přítomny outliery a leverage pointy.
+# Navíc se zvětšila signifikance poslední proměnné.
+
+### Nakreslíme si Scatter Plot s konfidenčními a prediction intervaly na hladine významnosti 5 %: ###
+new_crime <- data.frame(crim = seq(0,90,0.1779))
+new_conf = predict(logsplines_boston_lm, newdata = new_crime, interval = "confidence", level=0.95)
+new_pred = predict(logsplines_boston_lm, newdata = new_crime, interval = "prediction", level=0.95)
+boston_crime_final_p1<- ggplot(Boston, aes(x=crim, y=log(medv))) +
+  geom_point(size=1, alpha=0.7) +
+  labs(color="Lines:") + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,1], colour = "Fit")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,2], colour = "Confidence Interval")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_conf[,3], colour = "Confidence Interval")) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_pred[,2], colour = "Prediction Interval"), linetype=2) + 
+  geom_line(aes(x=seq(0,90,0.1779), y=new_pred[,3], colour = "Prediction Interval"), linetype=2) + 
+  theme_bw() +
+  xlab("Per Capita Crime Rate by Town") +
+  ylab("Log - Mean Value of Owner-Occupied Homes") +
+  ggtitle("Mean Value of Owner-Occupied Homes vs. Criminality") +
+  coord_cartesian(xlim=c(0, 90), ylim=c(1, 4))
+boston_crime_final_p1
+
+### Plot efektů: ###
+plot(allEffects(logsplines_boston_lm))
+
+### Shapiro-Wilk Normality Test: ###
+shapiro.test(residuals(logsplines_boston_lm)) # P-value je docelá nízka, tudíž musíme hypotézu o normalitě reziduí zamítnout.
+### Lilliefors (Kolmogorov-Smirnov) test for normality: ###
+library(nortest)
+lillie.test(residuals(logsplines_boston_lm)) # Analogicky.
+
+
+############
+### Q11: ###
+############
+
+pairs(~(.), newdata,  main="Basic Scatterplot Matrix")
+
+summary(as.factor(Boston$medv[Boston$medv<20]))
+summary(as.factor(Boston$medv[Boston$medv>=20 & Boston$medv<=40]))
+summary(as.factor(Boston$medv[Boston$medv>=40]))
+median(Boston$medv)
+# Tabulka četností jednotlivých hodnot odezvy 'medv' ukazuje na to, že 
+# by hodnoty rovné 50 mohly vzniknout useknutím nebo chybně. 
+# Proto si je dovolíme odstranit.
+newdata <- Boston[which(Boston$medv != 50),]
+median(newdata$medv) # Po odstranění zmíněných hodnot se hodnota mediánu skoro nezmeníla.
+
+############
+### Q12: ###
+############
+
+dev.off()
+boston_all_lm <- lm(log(medv) ~ ., newdata)
+opar <- par(mfrow=c(2,2))
+plot(boston_all_lm)
+par(opar)
+summary(boston_all_lm)  # Model se všemi proměnnými najednou je přetížený.
+
+### Pro výběr ze všech možných vysvětlujících proměnných použijeme balík 'leaps' a kritéria Cp/r2. ###
+summary(newdata)
+leapsstatCp <- leaps(x=newdata[,c(1:13)], y=newdata[,14], names=names(newdata)[c(1:13)], method="Cp")
+leapsstatr2 <- leaps(x=newdata[,c(1:13)], y=newdata[,14], names=names(newdata)[c(1:13)], method="r2")
+CpParams <- leapsstatCp$size; CpValues <- leapsstatCp$Cp
+r2Params <- leapsstatr2$size; r2Values <- leapsstatr2$r2
+opar <- par(mfrow=c(1,2))
+plot(CpValues ~ CpParams)
+plot(r2Values ~ r2Params) 
+par(opar)
+# Vybereme proměnné s indexy 4, 5, 6, 8, 11, 13 (podle grafů je vidět, že existují i lepší
+# modely, ale chceme dobrý poměr cena/výkon.
+names(Boston)[c(4, 5, 6, 8, 11, 13)]
+leaps <- regsubsets(log(medv) ~ chas + nox + rm + dis + ptratio + lstat, newdata, nbest=10)
+summary(leaps)
+opar <- par(mfrow=c(2,2))
+plot(leaps,scale="Cp")
+plot(leaps,scale="adjr2")
+subsets(leaps, statistic="bic") 
+subsets(leaps, statistic="adjr2") 
+par(opar)
+dev.off()
+
+### Nakonec zvolíme model s proměnnými r-p-l. ###
+model_final <- lm(log(medv) ~ rm + ptratio + lstat, newdata)
+# Otestujeme náš výběr pomocí 'step' (Akaike).
+summary(step(model_final))  # Z AIC vyplývá, že všechny vybrané proměnné jsou signifikantní. 
+summary(model_final)  # F-statistic také dává dobrý výsledek.
+
+# Na grafu Residuals vs. Fitted lze pozorovat symetrii.
+op <- par(mfrow=c(2,2))
+plot(model_final)
+par(opar)
+
+# Z Shapiro-Wilkova testu neplyne normalita reziduí.
+shapiro.test(residuals(model_final))
+
+# Breusch-Paganův test ukazuje na heteroskedascicitu.
+bptest(model_final)
+

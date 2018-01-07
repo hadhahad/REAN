@@ -5,7 +5,7 @@
 
 
 ### Načtení potřebných knihoven ###
-needed.libraries <- c('data.table','car','MASS','ggplot2','ISLR','graphics','effects','lattice','segmented','leaps')
+needed.libraries <- c('data.table','car','MASS','ggplot2','ISLR','graphics','effects','lattice','segmented','leaps','splines')
 for(libs in needed.libraries) require(libs, character.only = TRUE)
 
 ? Boston
@@ -397,6 +397,12 @@ median(Boston$medv)
 # Proto si je dovolíme odstranit.
 newdata <- Boston[which(Boston$medv != 50),]
 median(newdata$medv) # Po odstranění zmíněných hodnot se hodnota mediánu skoro nezmeníla.
+dim(newdata)
+
+mm <- lm(medv ~ ., data = newdata)
+sort(residuals(mm))
+
+newdata <- newdata[-c(366,413,215,406),]
 
 ############
 ### Q12: ###
@@ -448,4 +454,74 @@ shapiro.test(residuals(model_final))
 
 # Breusch-Paganův test ukazuje na heteroskedascicitu.
 bptest(model_final)
+
+
+############
+### Q13: ###
+############
+
+# Z diagramu níže a z tvaru kovarianční matice vyplývá, že mezi 
+# vybranými proměnnými není významná kolinearita. Vzhledem ke korelacím
+# ostatních proměnných si dovolíme říct, že proměnné byly vybrány relativně dobře.
+# Lze ale mezi zvolenými proměnnými pozorovat jakousi nelineární závislost. 
+pairs(medv ~ rm + ptratio + lstat, data = newdata)
+cor(cbind(newdata$crim,newdata$zn,newdata$indus,newdata$chas,newdata$nox,
+          newdata$rm,newdata$age,newdata$dis,newdata$rad,newdata$tax,
+          newdata$black,newdata$ptratio,newdata$lstat))
+
+# Inflace variance pro vybraný model také není velka (mnohem menší <1.7).
+vif(model_final)
+
+# Index podmíněnosti je o hodně menší 30
+# (wiki: "If the condition number is above 30, the regression 
+# may have significant multicollinearity").
+kappa(cor(cbind(newdata$rm,newdata$ptratio,newdata$lstat)),exact=T)
+
+
+############
+### Q14: ###
+############
+
+# Zvolený model nezahrnuje v sobě kriminalitu.
+# Pro účely zadání Q14 ji přidáme.
+model_final_crim <- update(model_final, . ~ . + crim)
+summary(model_final)  # Vidíme, že se trochu zvětšil koeficient determinace.
+summary(model_final_crim)
+opar <- par(mfrow=c(2,2))
+plot(model_final_crim)
+par(opar)
+
+exp_bet1 <- exp(coef(model_final_crim)[5])  
+# Je to kladné číslo menší než jedna vyjádřující poměr E[Y|U,V,X=x+1]/E[Y|U,V,X=x].
+# Tedy (1-exp_beta1)*100 % vyjadřuje o kolik procent klesne cena nemovitosti při nárustu míry kriminality o 1 jendotku.
+(1-exp_bet1)*100
+# Daný model predikuje pokles cen přibližně o 1.02 % při nárůstu kriminality o jednotku.
+
+median(newdata$crim)
+plot(allEffects(model_final_crim))
+
+
+############
+### Q15: ###
+############
+
+### Výsledný model:
+summary(model_final)
+op <- par(mfrow=c(2,2))
+plot(model_final)
+par(opar)
+# Tento model má přípustný koeficient determinace (>0.6).
+# V Q12 byla pozorována symetrie reziduí a byly provedeny testy na 
+# heteroskedascicitu a normalitu reziduí.
+
+# Podívejme se na partial-regression grafy:
+avPlots(model_final_crim)
+
+# Na Q-Q plotu jsou stále vidět outliery.
+ggplot(newdata, aes(sample = residuals(model_final))) +
+  stat_qq(color="firebrick2", alpha=1) +
+  geom_abline(intercept = mean(residuals(model_final)), slope = sd(residuals(model_final)))
+
+# Outliery a leverage pointy by šlo odstranit nějakoi robustní metodou (LTS, LWS).
+
 
